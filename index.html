@@ -1,0 +1,2372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>WebChat</title>
+<link rel="icon" type="image/png" href="chat.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
+
+<style>
+/* RESET & MOBILE FIX */
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* CSS FIX: Mengunci body agar tidak scroll */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; 
+  position: fixed; 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: #ece5dd;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%; 
+  height: 100dvh; 
+  width: 100%;
+  overflow: hidden;
+}
+
+/* HEADER */
+#header{
+  background:#075e54;
+  color:#fff;
+  padding:12px 16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  box-shadow:0 2px 5px rgba(0,0,0,.1);
+  flex-shrink: 0; 
+  z-index: 10;
+}
+
+#user-info {
+  font-size: 16px;
+  font-weight: 500;
+  text-transform: uppercase; 
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#logoutBtn, #galleryBtn {
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-size:20px;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s ease;
+}
+#logoutBtn:hover, #galleryBtn:hover {background:rgba(255,255,255,.15);}
+
+/* LOADING & EMPTY STATES */
+.loading, .empty-state{
+  text-align:center;
+  padding:40px 20px;
+  color:#666;
+}
+
+/* CHAT CONTAINER */
+#chat-box{
+  flex:1;
+  overflow-y:auto; 
+  padding:10px;
+  -webkit-overflow-scrolling: touch; 
+  scroll-behavior: auto !important;
+  background:url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-attachment:fixed;
+}
+
+/* PESAN */
+.pesan{
+  position:relative;
+  max-width:70%;
+  padding: 8px 12px;
+  margin:6px 0;
+  border-radius:7.5px;
+  font-size:14px;
+  line-height:15px;
+  clear:both;
+  word-wrap:break-word;
+  box-shadow:0 1px 0.5px rgba(0,0,0,.13);
+}
+.saya{
+  background:#dcf8c6;
+  float:right;
+  border-bottom-right-radius:0;
+  margin-right:0;
+  margin-left:auto;
+}
+.lawan{
+  background:#fff;
+  float:left;
+  border-bottom-left-radius:0;
+}
+.pesan.shift-left{
+  transform:translateX(-35px);
+  transition:transform .15s ease;
+}
+.pesan small{
+  display:block;
+  font-size:11px;
+  font-weight:bold;
+  color:#555;
+  margin-bottom:4px;
+}
+
+/* STATUS LOGIN */
+.status-pesan {
+  position: relative;
+  max-width: 27%;
+  padding: 6px 12px;
+  margin: 4px auto 8px auto;
+  border-radius: 15px;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+  clear: both;
+  word-wrap: break-word;
+  animation: fadeInUp 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+.status-pesan.login {
+  background: rgba(227, 242, 253, 0.9);
+  border: 1px solid #90caf9;
+  color: #1565c0;
+  text-transform: capitalize; 
+}
+.status-pesan.logout {
+  background: rgba(245, 245, 245, 0.9);
+  border: 1px solid #e0e0e0;
+  color: #616161;
+  text-transform: capitalize; 
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* FILE CONTAINER */
+.file-container {
+  margin: 8px 0;
+  max-width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.file-preview {
+  position: relative;
+  max-width: 300px;
+}
+.file-preview img, .file-preview video {
+  max-width: 100%;
+  max-height: 250px;
+  border-radius: 8px;
+  display: block;
+  cursor: pointer;
+}
+.file-info {
+  background: rgba(0,0,0,0.05);
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+.file-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  word-break: break-all;
+}
+.file-size {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+.file-download {
+  display: inline-block;
+  background: #128c7e;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 12px;
+  margin-top: 6px;
+  transition: background .2s;
+}
+.file-download:hover { background: #075e54; }
+
+.pesan.highlight {
+  animation: shake 0.5s ease-in-out;
+  z-index: 100;
+  background: #e1f5fe !important; 
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+.reply-preview{
+  background:#f1f1f1;
+  padding:1px 8px;
+  border-left:3px solid #128c7e;
+  margin-bottom:1px;
+  font-size:12px;
+  cursor:pointer;
+  border-radius:4px;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  line-height: 1.3 !important; 
+}
+.reply-preview:hover{ background:#e0f2f1; }
+.edited{
+  font-size:10px;
+  color:#666;
+  margin-left:1px;
+  font-style:italic;
+}
+.timestamp{
+  font-size: 11px;
+  color: #667781;
+  text-align:right;
+  margin-left:8px;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+/* CENTANG & STATUS */
+.status-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px; 
+  margin-top: 2px;
+  float: right; 
+  margin-left: 8px;
+}
+.status-read {
+  font-size: 14px; 
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.centang-abu { color: #8696a0; }
+.centang-biru { color: #53bdeb; }
+
+/* MENU BUBBLE */
+.bubble-menu{
+  position:absolute;
+  top:6px;
+  bottom:6px;
+  display:none;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  z-index:1000
+}
+.bubble-menu.outside{right:-32px}
+.bubble-menu.inside{
+  right:6px;
+  animation:slideOut .15s ease forwards
+}
+@keyframes slideOut{
+  from{opacity:0;transform:translateX(0)}
+  to{opacity:1;transform:translateX(38px)}
+}
+.bubble-menu button{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  border:none;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+  cursor:pointer;
+  font-size:12px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.bubble-menu button:hover{
+  background:#e0f2f1;
+  transform:scale(1.15);
+  box-shadow:0 2px 5px rgba(0,0,0,.2);
+}
+
+/* INPUT AREA */
+#input-area{
+  background:#f0f0f0;
+  padding:12px 16px;
+  border-top:1px solid #ddd;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#reply-bar{
+  display:none;
+  background:#e0f2f1;
+  border-left:4px solid #128c7e;
+  padding:8px 12px;
+  margin-bottom:8px;
+  justify-content:space-between;
+  align-items:center;
+  border-radius:4px;
+}
+#reply-text{
+  font-size:13px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:85%;
+  flex:1;
+}
+#reply-bar span{
+  cursor:pointer;
+  font-weight:bold;
+  color:#128c7e;
+  padding:4px;
+  border-radius:50%;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#reply-bar span:hover{ background:rgba(0,0,0,.1); }
+
+/* INPUT ROW */
+#input-row{ display:flex; align-items:center; gap:8px; }
+#input{
+  flex:1;
+  padding:12px 16px;
+  border-radius:24px;
+  border:1px solid #ccc;
+  outline:none;
+  font-size:14px;
+  background:#fff;
+  min-height:44px;
+  max-height: 120px; 
+  resize:none;
+  font-family:inherit;
+}
+#input:focus{
+  border-color:#128c7e;
+  box-shadow:0 0 0 2px rgba(18,140,126,.1);
+}
+
+/* TOMBOL */
+#voiceBtn, #fileBtn, #sendBtn {
+  width: 44px; height: 44px;
+  border-radius: 50%; border: none;
+  background: #128c7e; color: #fff;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .15s ease; flex-shrink: 0;
+}
+#voiceBtn:hover, #fileBtn:hover, #sendBtn:hover {
+  background: #075e54;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+#sendBtn { display:none; }
+#voiceBtn.recording {
+  background: #FF4444;
+  animation: pulse 1.5s infinite;
+}
+#sendBtn:active{ transform:scale(0.95); }
+#sendBtn:disabled{ background:#b2dfdb; cursor:not-allowed; }
+
+/* MODAL PREVIEW */
+#preview-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.95);
+  z-index: 4000; 
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+#preview-content {
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#preview-content img, #preview-content video {
+  max-width: 100%;
+  max-height: 80vh;
+  display: block;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#close-preview {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: #fff;
+  font-size: 30px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.2);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+#close-preview:hover { background: rgba(255,255,255,0.4); }
+
+/* FILE UPLOAD PREVIEW */
+#upload-preview {
+  display: none;
+  background: #f8f8f8;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 2px dashed #128c7e;
+}
+.preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.preview-name {
+  flex: 1;
+  margin-left: 12px;
+  font-size: 14px;
+  word-break: break-all;
+}
+.preview-remove {
+  color: #ff4444;
+  cursor: pointer;
+  font-size: 18px;
+  margin-left: 8px;
+}
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* WHATSAPP VOICE */
+.voice-message {
+  display: flex;
+  align-items: center;
+  min-width: 160px;
+  max-width: 300px;
+  height: 18px;
+  position: relative;
+}
+.saya .voice-message { justify-content: flex-end; }
+.lawan .voice-message { justify-content: flex-start; }
+.voice-container {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-width: 140px;
+  max-width: 250px;
+  position: relative;
+}
+.voice-play-btn {
+  width: 36px; height: 18px;
+  border-radius: 50%; border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 12px; flex-shrink: 0;
+  position: relative; z-index: 3;
+  transition: transform 0.1s ease;
+}
+.saya .voice-play-btn { background: #00a884; color: white; }
+.lawan .voice-play-btn { background: white; color: #3b4a54; box-shadow: 0 1px 0.5px rgba(0,0,0,.13); }
+.voice-play-btn:hover { transform: scale(1.05); }
+.voice-play-btn.playing { background: #075e54; }
+.lawan .voice-play-btn.playing { background: #075e54; color: white; }
+.voice-play-btn .play-icon { font-size: 13px; margin-left: 3px; margin-top: -1px; }
+.voice-play-btn .pause-icon { font-size: 11px; font-weight: bold; letter-spacing: -1px; }
+.voice-waveform-container {
+  flex: 1; position: relative; height: 36px; display: flex; align-items: center;
+}
+.voice-waveform {
+  position: relative; height: 20px; flex: 1;
+  display: flex; align-items: center; gap: 1.5px; margin-right: 8px;
+}
+.wave-bar {
+  width: 2px; border-radius: 1px; transition: all 0.3s ease; position: relative;
+}
+.saya .wave-bar { background: rgba(255, 255, 255, 0.6); }
+.lawan .wave-bar { background: rgba(11, 20, 26, 0.3); }
+.wave-bar.active { background: #00a884; }
+.lawan .wave-bar.active { background: #075e54; }
+.voice-progress-overlay {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: rgba(0, 168, 132, 0.15); width: 0%;
+  transition: width 0.05s linear; pointer-events: none; z-index: 1;
+}
+.lawan .voice-progress-overlay { background: rgba(7, 94, 84, 0.1); }
+.voice-duration {
+  font-size: 13px; font-weight: 500; color: #667781;
+  min-width: 40px; text-align: right; letter-spacing: 0.3px;
+}
+.saya .voice-duration { color: rgba(255, 255, 255, 0.8); }
+.voice-progress-indicator {
+  position: absolute; top: 50%; left: 0; width: 3px; height: 24px;
+  background: #00a884; transform: translateY(-50%); z-index: 10;
+  border-radius: 1.5px; transition: left 0.05s linear;
+}
+.lawan .voice-progress-indicator { background: #075e54; }
+
+/* INDIKATOR REKAMAN */
+#recording-indicator {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.8); color: white; padding: 10px 20px;
+  border-radius: 20px; z-index: 1000; display: flex; align-items: center;
+  gap: 10px; font-size: 14px;
+}
+.recording-dot {
+  width: 12px; height: 12px; background: red; border-radius: 50%;
+  animation: pulse 1s infinite;
+}
+
+/* Spinner Animasi */
+#load-more-spinner {
+  display: none; justify-content: center; align-items: center;
+  padding: 10px; width: 100%;
+}
+.spinner {
+  width: 20px; height: 20px; border: 2px solid rgba(0,0,0,0.1);
+  border-top: 2px solid #075e54; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+} 
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.editing-active {
+  outline: 2px solid #25D366; 
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 5px; padding: 2px;
+}
+
+/* --- GALERI MEDIA MODAL --- */
+#gallery-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #111; 
+  z-index: 3000; 
+  flex-direction: column;
+}
+
+#gallery-header {
+  background: #202c33; 
+  color: #fff;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
+#gallery-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+  gap: 4px; 
+  padding: 4px;
+  align-content: start;
+}
+
+@media (min-width: 768px) {
+  #gallery-modal {
+    max-width: 800px;
+    height: 90%;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+}
+
+.gallery-item {
+  aspect-ratio: 1 / 1;
+  background: #222;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-item img, .gallery-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.2s;
+}
+
+.gallery-item:hover img { opacity: 0.8; }
+
+.gallery-item .video-icon {
+  position: absolute;
+  top: 5px; right: 5px;
+  color: white;
+  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+  font-size: 14px;
+  z-index: 2;
+}
+
+.gallery-item .play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.1);
+}
+
+/* Styling Tab Galeri */
+.g-tab {
+  flex: 1;
+  text-align: center;
+  padding: 12px;
+  color: #8696a0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: 0.3s;
+}
+.g-tab.active {
+  color: #00a884;
+  border-bottom: 3px solid #00a884;
+}
+.g-tab:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+/* Item Dokumen di Galeri */
+.gallery-doc-item {
+  aspect-ratio: 1/1;
+  background: #2a3942;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #111;
+}
+.gallery-doc-item span {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+.gallery-doc-item small {
+  font-size: 10px;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* TOMBOL SCROLL KE BAWAH & BADGE */
+#scroll-bottom-btn {
+  position: fixed;
+  bottom: 85px; 
+  right: 20px;
+  width: 45px;
+  height: 45px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  display: none; 
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 99;
+  transition: all 0.3s ease;
+}
+
+#scroll-bottom-btn:active {
+  transform: scale(0.9);
+}
+
+#unread-badge {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  background: #25d366; 
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  border: 2px solid #ece5dd;
+  display: none;
+}
+
+#scroll-bottom-btn span.arrow {
+  color: #555;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* PROGRESS BAR */
+.upload-progress-container {
+  width: 100%;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+  display: none; 
+}
+
+.upload-progress-bar {
+  height: 100%;
+  width: 0%;
+  background-color: #128c7e; 
+  transition: width 0.2s ease-in-out;
+  border-radius: 2px;
+}
+
+.upload-progress-bar.processing {
+  background-image: linear-gradient(
+    45deg, 
+    rgba(255,255,255,.15) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255,255,255,.15) 50%, 
+    rgba(255,255,255,.15) 75%, 
+    transparent 75%, 
+    transparent
+  );
+  background-size: 1rem 1rem;
+  animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+  from { background-position: 1rem 0; }
+  to { background-position: 0 0; }
+}
+
+/* Tombol Hapus di Preview Modal */
+#delete-preview {
+  position: absolute;
+  bottom: 30px;
+  right: 20px;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  background: rgba(255, 68, 68, 0.9);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: none; 
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 4001;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+#delete-preview:hover { background: #ff4444; transform: scale(1.1); }
+#delete-preview:active { transform: scale(0.9); }
+
+/* Tombol Navigasi di Modal Preview */
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 50px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.2);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  user-select: none;
+  transition: all 0.2s;
+  z-index: 4005;
+  border: none;
+}
+.nav-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-50%) scale(1.1); }
+#prev-preview { left: 20px; }
+#next-preview { right: 20px; }
+
+/* Sembunyikan tombol jika tidak ada file lagi */
+.nav-btn.hidden { visibility: hidden; opacity: 0; }
+
+@media (max-width: 768px) {
+  .nav-btn { width: 45px; height: 45px; font-size: 35px; background: rgba(0,0,0,0.4); }
+  #prev-preview { left: 10px; }
+  #next-preview { right: 10px; }
+}
+
+/* Ikon Play di tengah Video Chat */
+.video-chat-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.6); 
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  pointer-events: none; 
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+.video-chat-play i {
+  margin-left: 3px; 
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<div id="header">
+  <div style="display:flex; flex-direction:column;">
+    <div id="user-info">WebChat</div>
+    <div id="typing-status" style="font-size:11px; color: #d1f4cc; height: 12px; font-weight: normal; text-transform: none;"></div>
+  </div>
+  <div class="header-actions">
+    <button id="galleryBtn" onclick="openGallery()" title="Galeri Media">
+      <i class="fa-solid fa-images"></i>
+    </button>
+    <button id="logoutBtn" onclick="logout()" title="Logout">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </button>
+  </div>
+</div>
+
+<div id="chat-box">
+  <div id="load-more-spinner"><div class="spinner"></div></div>
+  <div class="loading">Memuat percakapan...</div>
+</div>
+
+<div id="input-area">
+  <div id="reply-bar">
+    <div id="reply-text"></div>
+    <span onclick="cancelReply()">✕</span>
+  </div>
+
+  <div id="upload-preview"></div>
+
+  <div id="input-row">
+    <textarea id="input" placeholder="Ketik pesan..." rows="1"></textarea>
+    
+    <button id="fileBtn" title="Unggah file" onclick="document.getElementById('file-input').click()">
+      <i class="fa-solid fa-paperclip"></i>
+    </button>
+    
+    <button id="sendBtn" onclick="kirim()" title="Kirim pesan">
+      <i class="fa-solid fa-paper-plane"></i>
+    </button>
+    
+    <button id="voiceBtn" title="Rekam suara">
+      <i class="fa-solid fa-microphone" id="mic-icon"></i>
+    </button>
+  </div>
+
+  <div id="preview-modal" onclick="closePreview()">
+    <button id="prev-preview" class="nav-btn" onclick="navigatePreview(-1); event.stopPropagation()">‹</button>
+    <button id="next-preview" class="nav-btn" onclick="navigatePreview(1); event.stopPropagation()">›</button>
+
+    <div id="preview-content" onclick="event.stopPropagation()"></div>
+    <div id="close-preview" onclick="closePreview()">✕</div>
+    <div id="delete-preview" title="Hapus pesan ini">
+      <i class="fa-solid fa-trash"></i>
+    </div>
+  </div>
+    
+  <div id="gallery-modal">
+    <div id="gallery-header">
+      <span onclick="closeGallery()" style="cursor:pointer; font-size:24px;">←</span>
+      <span>Galeri Media</span>
+    </div>
+    
+    <div id="gallery-tabs" style="display:flex; background:#202c33; border-bottom:1px solid #333;">
+      <div class="g-tab active" onclick="switchGalleryTab('all')">Semua</div>
+      <div class="g-tab" onclick="switchGalleryTab('image')">Foto</div>
+      <div class="g-tab" onclick="switchGalleryTab('video')">Video</div>
+      <div class="g-tab" onclick="switchGalleryTab('doc')">Dokumen</div>
+    </div>
+
+    <div id="gallery-grid"></div>
+  </div>
+
+  <div id="scroll-bottom-btn" onclick="scrollToBottom()">
+    <span id="unread-badge">0</span>
+    <i class="fas fa-chevron-down arrow"></i>
+  </div>
+
+  <input type="file" id="file-input" multiple style="display:none;">
+
+</div>
+
+<script type="module">
+import imageCompression from 'https://esm.sh/browser-image-compression@2.0.2';
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, query, orderBy,
+  onSnapshot, doc, getDoc, updateDoc, deleteDoc, serverTimestamp,
+  writeBatch, getDocs, where, limitToLast, limit, startAfter, setDoc
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+/* KONFIGURASI SUPABASE */
+const supabaseUrl = 'https://jlihaulpdflnccgcjaud.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsaWhhdWxwZGZsbmNjZ2NqYXVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYxMjY2MDYsImV4cCI6MjA4MTcwMjYwNn0.vncAguYh88c1ZiI_c1-YsqL4aEXw2NdLpnwKJs3Z-7g'
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+/* FIREBASE */
+const firebaseConfig = {
+  apiKey: "AIzaSyDyNGIqto0Sk0UT1IzC-xgOV9sI71GrIu8",
+  authDomain: "webchat-coba.firebaseapp.com",
+  projectId: "webchat-coba",
+  storageBucket: "webchat-coba.firebasestorage.app",
+  messagingSenderId: "808219710650",
+  appId: "1:808219710650:web:61320aa86fda4ce804de83",
+  measurementId: "G-VEKM8LJRY1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* STATE */
+let user = null; 
+let username="", replyData=null;
+let isSending = false;
+let filesToUpload = [];
+let isFirstLoad = true;
+let lastVisible = null;   
+let isLoadingMore = false; 
+let reachedEnd = false;    
+const PAGE_SIZE = 20;      
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordingStartTime = null;
+let recordingTimer = null;
+let isUploadingVoice = false;
+let unreadCount = 0;
+let galleryListener = null;
+let previewFiles = [];
+let currentPreviewIndex = -1;
+
+/* STATE TYPING INDICATOR & ONLINE STATUS */
+let typingTimeout;
+const typingStatusEl = document.getElementById('typing-status');
+let currentGlobalStatusText = "";
+let currentGlobalStatusColor = "#d1f4cc";
+
+/* ELEMENT */
+const chatBox=document.getElementById("chat-box");
+const replyBar=document.getElementById("reply-bar");
+const replyText=document.getElementById("reply-text");
+const input=document.getElementById("input");
+const sendBtn=document.getElementById("sendBtn");
+const voiceBtn=document.getElementById("voiceBtn");
+const fileBtn=document.getElementById("fileBtn");
+const fileInput=document.getElementById("file-input");
+const uploadPreview=document.getElementById("upload-preview");
+const previewModal=document.getElementById("preview-modal");
+const previewContent=document.getElementById("preview-content");
+const logoutBtn=document.getElementById("logoutBtn");
+const scrollBottomBtn = document.getElementById("scroll-bottom-btn");
+const unreadBadge = document.getElementById("unread-badge");
+
+/* UTIL FUNCTIONS */
+function sanitize(text){
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function linkify(text) {
+  const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+  return text.replace(urlPattern, '<a href="$1" target="_blank" style="color: #027eb5; text-decoration: underline;">$1</a>');
+}
+
+async function compressImage(file) {
+  const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true };
+  try {
+    const compressedFile = await imageCompression(file, options);
+    return new File([compressedFile], file.name, { type: file.type, lastModified: Date.now() });
+  } catch (error) { return file; }
+}
+
+function formatTime(timestamp){
+  if(!timestamp) return '';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+}
+
+function formatFileSize(bytes){
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function formatVoiceDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function autoResizeTextarea(textarea){
+  textarea.style.height = 'auto';
+  const newHeight = Math.min(textarea.scrollHeight, 120);
+  textarea.style.height = newHeight + 'px';
+  updateSend();
+}
+
+function updateSend(){
+  const hasContent = (input.value.trim().length > 0 || filesToUpload.length > 0) && !isSending;
+  const micIcon = document.getElementById("mic-icon");
+  
+  if(hasContent){
+    sendBtn.style.display = "flex";
+    voiceBtn.style.display = "none";
+  } else {
+    sendBtn.style.display = "none";
+    voiceBtn.style.display = "flex";
+    
+    if (isRecording) {
+      voiceBtn.classList.add("recording");
+      micIcon.className = "fa-solid fa-circle"; 
+    } else {
+      voiceBtn.classList.remove("recording");
+      micIcon.className = "fa-solid fa-microphone"; 
+    }
+  }
+}
+
+/* TYPING INDICATOR FUNCTIONS */
+async function setTypingStatus(isTyping) {
+  if (!user || !username) return;
+  try {
+    await setDoc(doc(db, "typing", "global_status"), {
+      [user.uid]: {
+        typing: isTyping,
+        name: username,
+        timestamp: Date.now()
+      }
+    }, { merge: true });
+  } catch (e) { console.error("Error setting typing status:", e); }
+}
+
+function listenToTyping() {
+  onSnapshot(doc(db, "typing", "global_status"), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      let typingUsers = [];
+      const now = Date.now();
+      
+      for (let uid in data) {
+        if (user && uid !== user.uid && data[uid].typing && (now - data[uid].timestamp < 5000)) {
+          typingUsers.push(data[uid].name);
+        }
+      }
+      
+      if (typingUsers.length > 0) {
+        typingStatusEl.innerText = typingUsers.join(", ") + " sedang mengetik...";
+        typingStatusEl.style.color = "#d1f4cc";
+      } else {
+        typingStatusEl.innerText = currentGlobalStatusText;
+        typingStatusEl.style.color = currentGlobalStatusColor;
+      }
+    }
+  });
+}
+
+/* ONLINE & LAST SEEN FUNCTIONS */
+async function updateOnlineStatus(statusVal) {
+  if (!user || !username) return;
+  try {
+    await setDoc(doc(db, "status", user.uid), {
+      state: statusVal,
+      last_changed: serverTimestamp(),
+      name: username
+    }, { merge: true });
+  } catch (e) { console.error("Gagal update status:", e); }
+}
+
+window.addEventListener('beforeunload', () => updateOnlineStatus('offline'));
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    updateOnlineStatus('online');
+  } else {
+    updateOnlineStatus('offline');
+  }
+});
+
+function listenToUserStatus() {
+  const statusRef = collection(db, "status");
+  onSnapshot(statusRef, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      const data = change.doc.data();
+      const userId = change.doc.id;
+
+      if (user && userId !== user.uid) {
+        renderStatusHeader(data);
+      }
+    });
+  });
+}
+
+function renderStatusHeader(data) {
+  if (data.state === 'online') {
+    currentGlobalStatusText = `${data.name || 'User'} Online`;
+    currentGlobalStatusColor = "#d1f4cc";
+  } else {
+    const waktu = data.last_changed ? formatTime(data.last_changed) : "";
+    currentGlobalStatusText = `${data.name || 'User'} terakhir dilihat pukul ${waktu}`;
+    currentGlobalStatusColor = "#ccc";
+  }
+  
+  if (!typingStatusEl.innerText.includes("sedang mengetik")) {
+    typingStatusEl.innerText = currentGlobalStatusText;
+    typingStatusEl.style.color = currentGlobalStatusColor;
+  }
+}
+
+/* FUNGSI BUBBLE LOGIN */
+function createLoginBubble(userNameStr, type = 'login', timestamp = null) {
+  const now = (timestamp && (timestamp instanceof Date || (timestamp.toDate && typeof timestamp.toDate === 'function'))) 
+    ? (timestamp instanceof Date ? timestamp : timestamp.toDate()) : new Date();
+  
+  const messageId = `login-${userNameStr.replace(/\s+/g, '-')}`;
+  const existingBubble = document.getElementById(messageId);
+  
+  if (existingBubble) {
+    existingBubble.dataset.type = type;
+    existingBubble.dataset.timestamp = now.getTime();
+    const timeText = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + 
+                     now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const statusText = type === 'login' ? 'telah login' : 'telah logout';
+    existingBubble.innerHTML = `<span class="user-name">${userNameStr}</span> <span class="status-text">${statusText}</span><span class="timestamp">${timeText}</span>`;
+    existingBubble.className = `status-pesan ${type}`;
+    existingBubble.style.animation = 'none';
+    setTimeout(() => { existingBubble.style.animation = 'fadeInUp 0.3s ease'; }, 10);
+    return existingBubble;
+  }
+  
+  const bubble = document.createElement("div");
+  bubble.className = `status-pesan ${type}`;
+  bubble.id = messageId; bubble.dataset.user = userNameStr; bubble.dataset.type = type; bubble.dataset.timestamp = now.getTime();
+  const timeText = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + 
+                   now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const statusText = type === 'login' ? 'telah login' : 'telah logout';
+  bubble.innerHTML = `<span class="user-name">${userNameStr}</span> <span class="status-text">${statusText}</span><span class="timestamp">${timeText}</span>`;
+  return bubble;
+}
+
+async function saveLoginToFirestore(type = 'login') {
+  try {
+    if (!username || username === "Anonim") return;
+    const loginsRef = collection(db, "logins");
+    const q = query(loginsRef, where("user", "==", username));
+    const querySnapshot = await getDocs(q);
+    const batch = writeBatch(db);
+    querySnapshot.forEach((docSnap) => { batch.delete(docSnap.ref); });
+    const loginData = { user: username, type: type, waktu: serverTimestamp() };
+    const newLoginRef = doc(collection(db, "logins"));
+    batch.set(newLoginRef, loginData);
+    await batch.commit();
+  } catch (error) { console.error(`Error menyimpan ${type}:`, error); }
+}
+
+function renderLoginMessage(docSnap) {
+  const data = docSnap.data();
+  if (data.user === username) return;
+  const bubble = createLoginBubble(data.user, data.type, data.waktu);
+  if (!bubble) return;
+  const allMessages = Array.from(chatBox.children);
+  const existingBubbleIndex = allMessages.findIndex(child => child.id === bubble.id);
+  if (existingBubbleIndex !== -1) allMessages[existingBubbleIndex].remove();
+  
+  const existingLoginBubbles = chatBox.querySelectorAll('.status-pesan');
+  if (existingLoginBubbles.length >= 5) {
+    let oldestBubble = null, oldestTime = Infinity;
+    existingLoginBubbles.forEach(b => {
+      const timestamp = parseInt(b.dataset.timestamp);
+      if (timestamp < oldestTime) { oldestTime = timestamp; oldestBubble = b; }
+    });
+    if (oldestBubble) oldestBubble.remove();
+  }
+  const lastMessage = chatBox.querySelector('.pesan:last-child');
+  if (lastMessage) chatBox.insertBefore(bubble, lastMessage.nextSibling);
+  else chatBox.appendChild(bubble);
+}
+
+function listenLogins() {
+  const q = query(collection(db, "logins"), orderBy("waktu", "desc"));
+  onSnapshot(q, (snapshot) => {
+    const existingBubbles = chatBox.querySelectorAll('.status-pesan');
+    existingBubbles.forEach(bubble => bubble.remove());
+    const userStatusMap = new Map();
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!userStatusMap.has(data.user) && data.user !== username) { userStatusMap.set(data.user, { data, doc: docSnap }); }
+    });
+    let count = 0;
+    userStatusMap.forEach((value) => { if (count < 5) { renderLoginMessage(value.doc); count++; } });
+  });
+}
+
+/* FUNGSI REKAMAN SUARA */
+async function startRecording(e) {
+  e.preventDefault();
+  if (isRecording || isUploadingVoice) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 }
+    });
+    let options = { audioBitsPerSecond: 128000 };
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) { options.mimeType = 'audio/webm;codecs=opus'; } 
+    else if (MediaRecorder.isTypeSupported('audio/mp4')) { options.mimeType = 'audio/mp4'; }
+    mediaRecorder = new MediaRecorder(stream, options);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) audioChunks.push(event.data); };
+    mediaRecorder.onstop = () => { stream.getTracks().forEach(track => track.stop()); };
+    mediaRecorder.start(100);
+    isRecording = true; recordingStartTime = Date.now();
+    voiceBtn.classList.add("recording"); voiceBtn.innerHTML = "●";
+    showRecordingIndicator();
+    setTimeout(() => { if (isRecording) stopRecording(); }, 120000);
+  } catch (error) { alert("Tidak dapat mengakses mikrofon. Pastikan Anda memberikan izin."); }
+}
+
+function stopRecording() {
+  if (!isRecording || !mediaRecorder) return;
+  const duration = (Date.now() - recordingStartTime) / 1000;
+  if (duration < 0.5) { cancelRecording(); return; }
+  if (mediaRecorder.state === "recording") mediaRecorder.stop();
+  setTimeout(() => { processAndSendRecording(duration); }, 500);
+}
+
+function cancelRecording() {
+  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+  cleanupRecording(); hideRecordingIndicator();
+}
+
+function cleanupRecording() {
+  if (recordingTimer) clearInterval(recordingTimer);
+  isRecording = false; mediaRecorder = null; audioChunks = []; recordingStartTime = null;
+  voiceBtn.classList.remove("recording"); voiceBtn.innerHTML = "🎤"; updateSend();
+}
+
+function showRecordingIndicator() {
+  const indicator = document.createElement("div"); indicator.id = "recording-indicator";
+  indicator.style.cssText = `position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; z-index: 1000; display: flex; align-items: center; gap: 10px; font-size: 14px;`;
+  const dot = document.createElement("div"); dot.className = "recording-dot";
+  const time = document.createElement("div"); time.id = "recording-time"; time.textContent = "00:00";
+  const cancel = document.createElement("div"); cancel.textContent = "Geser ke atas untuk batal";
+  cancel.style.fontSize = "11px"; cancel.style.opacity = "0.8";
+  indicator.appendChild(dot); indicator.appendChild(time); indicator.appendChild(cancel);
+  document.body.appendChild(indicator);
+  recordingTimer = setInterval(() => {
+    if (recordingStartTime) {
+      const seconds = Math.floor((Date.now() - recordingStartTime) / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      time.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+  }, 1000);
+}
+
+function hideRecordingIndicator() {
+  const indicator = document.getElementById("recording-indicator");
+  if (indicator) indicator.remove();
+  if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+}
+
+async function processAndSendRecording(duration) {
+  if (audioChunks.length === 0) { cleanupRecording(); hideRecordingIndicator(); return; }
+  isUploadingVoice = true; hideRecordingIndicator();
+  voiceBtn.innerHTML = "⌛"; voiceBtn.disabled = true;
+  try {
+    const mimeType = mediaRecorder.mimeType || 'audio/webm';
+    const audioBlob = new Blob(audioChunks, { type: mimeType });
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const file = new File([audioBlob], `voice_${Date.now()}.${ext}`, { type: mimeType });
+    const voiceFile = await uploadToSupabase(file);
+    const messageData = {
+      user: username, waktu: serverTimestamp(), edited: false, readBy: [username],
+      files: [voiceFile], isVoiceMessage: true, voiceDuration: Math.floor(duration), teks: ""
+    };
+    if (replyData) { messageData.reply = replyData; replyData = null; replyBar.style.display = "none"; }
+    const chatMessageRef =
+      await addDoc(collection(db, "pesan"), messageData);
+
+    // Forward text to WhatsApp through the serverless backend.
+    // File/voice messages remain in WebChat and are not forwarded here.
+    if (messageText) {
+      try {
+        const waResult =
+          await sendTextToWhatsApp(messageText);
+
+        await updateDoc(chatMessageRef, {
+          whatsapp: {
+            status: "sent",
+            messageId: waResult.messageId || null,
+            sentAt: serverTimestamp()
+          }
+        });
+      } catch (waError) {
+        console.error("WhatsApp send error:", waError);
+
+        // WebChat message stays saved even when WhatsApp fails.
+        await updateDoc(chatMessageRef, {
+          whatsapp: {
+            status: "failed",
+            error: String(waError.message || waError),
+            failedAt: serverTimestamp()
+          }
+        });
+      }
+    }
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 100);
+  } catch (error) { alert("Gagal mengirim pesan suara."); } finally {
+    isUploadingVoice = false; cleanupRecording(); updateSend();
+  }
+}
+
+voiceBtn.addEventListener("mousedown", startRecording);
+voiceBtn.addEventListener("touchstart", startRecording);
+document.addEventListener("mouseup", stopRecording);
+document.addEventListener("touchend", stopRecording);
+voiceBtn.addEventListener("mouseleave", function() {
+  if (!isRecording) return;
+  const duration = (Date.now() - recordingStartTime) / 1000;
+  if (duration < 0.5) cancelRecording();
+});
+
+let touchStartY = 0, isSwipingToCancel = false;
+voiceBtn.addEventListener("touchstart", function(e) { touchStartY = e.touches[0].clientY; isSwipingToCancel = false; });
+document.addEventListener("touchmove", function(e) {
+  if (!isRecording) return;
+  const touchY = e.touches[0].clientY;
+  const deltaY = touchStartY - touchY;
+  if (deltaY > 50) {
+    isSwipingToCancel = true;
+    const indicator = document.getElementById("recording-indicator");
+    if (indicator) { indicator.style.background = "rgba(255, 68, 68, 0.9)"; indicator.querySelector(".recording-dot").style.background = "#fff"; }
+  }
+});
+document.addEventListener("touchend", function(e) { if (!isRecording) return; if (isSwipingToCancel) { cancelRecording(); isSwipingToCancel = false; } });
+
+/* FILE UPLOAD */
+fileBtn.onclick = () => { fileInput.click(); };
+fileInput.onchange = (e) => {
+  const files = Array.from(e.target.files);
+  if(files.length === 0) return;
+  files.forEach(file => {
+    if(filesToUpload.length >= 5) { alert("Maksimal 5 file"); return; }
+    if(file.size > 50 * 1024 * 1024) { alert(`File terlalu besar (maks 50MB)`); return; }
+    filesToUpload.push(file);
+    showUploadPreview();
+  });
+  fileInput.value = ''; updateSend();
+};
+
+function showUploadPreview() {
+  uploadPreview.innerHTML = ''; 
+  uploadPreview.style.display = 'block';
+  
+  filesToUpload.forEach((file, index) => {
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'preview-item';
+    previewDiv.id = `preview-file-${index}`; 
+    
+    let icon = '📄';
+    let compressOption = '';
+    
+    if(file.type.startsWith('image/')) {
+      icon = '🖼️';
+      compressOption = `<label style="font-size: 11px; margin-right: 10px; display: flex; align-items: center; gap: 4px; cursor: pointer; color: #128c7e; font-weight: bold;"><input type="checkbox" class="compress-check" data-index="${index}" checked> Kompres</label>`;
+    } else if(file.type.startsWith('video/')) { icon = '🎬'; }
+    
+    previewDiv.innerHTML = `
+      <div style="width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; flex: 1; overflow: hidden;">
+            <span style="margin-right: 8px;">${icon}</span>
+            <div class="preview-name" style="margin-left: 0;">${file.name} (${formatFileSize(file.size)})</div>
+          </div>
+          <div style="display: flex; align-items: center; flex-shrink: 0;">
+            ${compressOption}
+            <span class="preview-remove" onclick="removeFile(${index})" style="margin-left: 10px;">✕</span>
+          </div>
+        </div>
+        <div class="upload-progress-container" id="progress-container-${index}">
+          <div class="upload-progress-bar" id="progress-bar-${index}"></div>
+        </div>
+      </div>
+    `;
+    uploadPreview.appendChild(previewDiv);
+  });
+}
+
+window.removeFile = (index) => {
+  filesToUpload.splice(index, 1);
+  if(filesToUpload.length === 0) uploadPreview.style.display = 'none'; else showUploadPreview();
+  updateSend();
+};
+
+async function uploadToSupabase(file) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `chat-files/${fileName}`;
+    const { data, error } = await supabase.storage.from('chat-storage').upload(filePath, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('chat-storage').getPublicUrl(filePath);
+    return { url: urlData.publicUrl, name: file.name, type: file.type, size: file.size, path: filePath };
+  } catch (error) { console.error('Upload error:', error); throw error; }
+}
+
+/* AUTH */
+onAuthStateChanged(auth, async u => {
+  if(!u){ 
+    if(!window.location.href.includes('login.html')) location.href="login.html"; 
+    return; 
+  }
+  user = u;
+  try{
+    const snap=await getDoc(doc(db,"usernames",user.uid));
+    username=snap.exists()?snap.data().username:"Anonim";
+    document.getElementById("user-info").textContent=`${username}`;
+    await saveLoginToFirestore('login');
+    updateOnlineStatus('online');
+    listenChat(); 
+    listenLogins();
+    listenToTyping();
+    listenToUserStatus();
+  }catch(error){ console.error("Auth error:", error); }
+});
+
+/* WAVEFORM */
+function createWhatsAppVoiceWaveform(isMe, duration = 10) {
+  const container = document.createElement('div'); container.className = 'voice-waveform-container';
+  const progressOverlay = document.createElement('div'); progressOverlay.className = 'voice-progress-overlay'; container.appendChild(progressOverlay);
+  const waveform = document.createElement('div'); waveform.className = 'voice-waveform';
+  const barCount = 35;
+  const barPattern = [3, 4, 5, 7, 9, 11, 13, 15, 17, 19, 20, 19, 17, 15, 13, 11, 9, 7, 5, 4, 3];
+  for (let i = 0; i < barCount; i++) {
+    const bar = document.createElement('div'); bar.className = 'wave-bar';
+    const patternIndex = i % barPattern.length;
+    let height = barPattern[patternIndex] + Math.random() * 3 - 1.5;
+    height = Math.max(3, Math.min(20, height));
+    bar.style.height = `${height}px`; waveform.appendChild(bar);
+  }
+  const progressIndicator = document.createElement('div'); progressIndicator.className = 'voice-progress-indicator';
+  container.appendChild(progressIndicator); container.appendChild(waveform);
+  return { container, progressOverlay, waveform, progressIndicator, bars: waveform.children };
+}
+
+function updateWhatsAppWaveformDuringPlayback(audio, waveformContainer) {
+  const { progressOverlay, progressIndicator, bars } = waveformContainer;
+  const totalBars = bars.length;
+  progressOverlay.style.width = '0%'; progressIndicator.style.display = 'none';
+  for (let i = 0; i < totalBars; i++) bars[i].classList.remove('active');
+  let animationFrameId = null;
+  const updateProgress = () => {
+    if (audio.paused || audio.ended) { cancelAnimationFrame(animationFrameId); return; }
+    const progressPercent = (audio.currentTime / audio.duration) * 100;
+    progressOverlay.style.width = `${progressPercent}%`;
+    progressIndicator.style.left = `${progressPercent}%`;
+    progressIndicator.style.display = 'block';
+    const activeBarIndex = Math.floor((progressPercent / 100) * totalBars);
+    for (let i = 0; i < totalBars; i++) { if (i <= activeBarIndex) bars[i].classList.add('active'); else bars[i].classList.remove('active'); }
+    animationFrameId = requestAnimationFrame(updateProgress);
+  };
+  const handlePlay = () => { cancelAnimationFrame(animationFrameId); updateProgress(); };
+  const handlePause = () => { cancelAnimationFrame(animationFrameId); };
+  const handleEnded = () => { cancelAnimationFrame(animationFrameId); progressIndicator.style.display = 'none'; };
+  const handleSeeked = () => { cancelAnimationFrame(animationFrameId); updateProgress(); };
+  const handleTimeUpdate = () => {
+    const progressPercent = (audio.currentTime / audio.duration) * 100;
+    progressOverlay.style.width = `${progressPercent}%`; progressIndicator.style.left = `${progressPercent}%`;
+  };
+  audio.addEventListener('play', handlePlay); audio.addEventListener('pause', handlePause);
+  audio.addEventListener('ended', handleEnded); audio.addEventListener('seeked', handleSeeked);
+  audio.addEventListener('timeupdate', handleTimeUpdate);
+  return () => {
+    cancelAnimationFrame(animationFrameId);
+    audio.removeEventListener('play', handlePlay); audio.removeEventListener('pause', handlePause);
+    audio.removeEventListener('ended', handleEnded); audio.removeEventListener('seeked', handleSeeked);
+    audio.removeEventListener('timeupdate', handleTimeUpdate);
+  };
+}
+
+/* LISTEN CHAT */
+function listenChat() {
+  const q = query(collection(db, "pesan"), orderBy("waktu", "asc"), limitToLast(PAGE_SIZE));
+  
+  onSnapshot(q, s => {
+    const loadingEl = chatBox.querySelector('.loading'); 
+    if (loadingEl) loadingEl.remove();
+
+    const isAtBottom = (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight) < 100;
+
+    if (!isFirstLoad) {
+      s.docChanges().forEach(change => {
+        if (change.type === "added") {
+          const data = change.doc.data();
+          if (!isAtBottom && data.user !== username) {
+            unreadCount++;
+          }
+        }
+      });
+    }
+
+    if (!s.empty && isFirstLoad) { lastVisible = s.docs[0]; }
+
+    const spinner = document.getElementById("load-more-spinner");
+    const oldMessages = Array.from(chatBox.querySelectorAll('.pesan')).filter(el => { 
+      return !s.docs.some(doc => "msg-" + doc.id === el.id); 
+    });
+
+    chatBox.innerHTML = ''; 
+    chatBox.appendChild(spinner);
+    oldMessages.forEach(el => chatBox.appendChild(el));
+    
+    s.forEach(d => { 
+      const el = renderMessage(d); 
+      chatBox.appendChild(el); 
+    });
+
+    if (isFirstLoad) { 
+      chatBox.scrollTop = chatBox.scrollHeight; 
+      isFirstLoad = false; 
+    } else if (isAtBottom) { 
+      chatBox.scrollTop = chatBox.scrollHeight;
+      unreadCount = 0;
+    }
+    
+    updateScrollButtonUI();
+  });
+}
+
+function updateScrollButtonUI() {
+  const isAtBottom = (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight) < 100;
+
+  if (isAtBottom) {
+    scrollBottomBtn.style.display = "none";
+    unreadCount = 0; 
+    unreadBadge.style.display = "none";
+  } else {
+    scrollBottomBtn.style.display = "flex";
+    if (unreadCount > 0) {
+      unreadBadge.style.display = "block";
+      unreadBadge.textContent = unreadCount > 99 ? "99+" : unreadCount;
+    } else {
+      unreadBadge.style.display = "none";
+    }
+  }
+}
+
+window.scrollToBottom = () => {
+  chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+};
+
+function resetUnread() {
+  unreadCount = 0;
+  scrollBottomBtn.style.display = "none";
+  unreadBadge.style.display = "none";
+}
+
+chatBox.addEventListener("scroll", () => {
+  if (chatBox.scrollTop === 0 && !isLoadingMore && !reachedEnd) { 
+    loadMoreMessages(); 
+  }
+  updateScrollButtonUI();
+});
+
+function renderMessage(d) {
+  const data = d.id ? d.data() : d; 
+  const isMe = data.user === username;
+  const msgId = d.id || "";
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "pesan " + (isMe ? "saya" : "lawan");
+  msgDiv.id = "msg-" + msgId;
+  msgDiv.dataset.timestamp = data.waktu?.toDate ? data.waktu.toDate().getTime() : Date.now();
+
+  onSnapshot(doc(db, "pesan", msgId), (updatedDoc) => {
+    if (!updatedDoc.exists()) {
+      msgDiv.remove();
+      return;
+    }
+    const updatedData = updatedDoc.data();
+    const textEl = msgDiv.querySelector(".msg");
+    if (textEl && updatedData.teks !== textEl.textContent) {
+      textEl.innerHTML = linkify(sanitize(updatedData.teks));
+      if (updatedData.edited && !msgDiv.querySelector('.edited-label')) {
+         const timeSpan = msgDiv.querySelector('.timestamp');
+         if(timeSpan) timeSpan.innerHTML = '<i class="fa-solid fa-pencil" style="font-size:10px; margin-right:4px;"></i>' + timeSpan.innerHTML;
+      }
+    }
+  });
+
+  if (data.reply) {
+    const replyDiv = document.createElement("div");
+    replyDiv.className = "reply-preview";
+    replyDiv.innerHTML = `<small>${data.reply.user}</small><span>${data.reply.text}</span>`;
+    
+    replyDiv.onclick = () => {
+      scrollToMessage(data.reply.id); 
+    };
+    
+    msgDiv.appendChild(replyDiv);
+  }
+
+  if (data.files && data.files.length > 0) {
+    const fileContainer = document.createElement("div");
+    fileContainer.className = "file-container";
+    
+    data.files.forEach(file => {
+      if (file.type.startsWith('audio/')) {
+        const voiceDiv = document.createElement("div");
+        voiceDiv.className = "voice-message";
+        
+        const playBtn = document.createElement("button");
+        playBtn.className = "voice-play-btn";
+        playBtn.innerHTML = '<i class="fa-solid fa-play play-icon"></i>';
+        
+        const { container: waveContainer, progressOverlay, waveform, progressIndicator, bars } = createWhatsAppVoiceWaveform(isMe, file.voiceDuration || 0);
+        
+        const durationDiv = document.createElement("div");
+        durationDiv.className = "voice-duration";
+        durationDiv.textContent = formatVoiceDuration(file.voiceDuration || 0);
+
+        const audio = new Audio(file.url);
+        audio.preload = "metadata";
+
+        let cleanupAnimation = null;
+        playBtn.onclick = () => {
+          if (audio.paused) {
+            document.querySelectorAll('audio').forEach(a => { if(a !== audio) { a.pause(); a.currentTime = 0; } });
+            document.querySelectorAll('.voice-play-btn').forEach(b => { 
+                b.innerHTML = '<i class="fa-solid fa-play play-icon"></i>'; 
+                b.classList.remove('playing'); 
+            });
+
+            audio.play();
+            playBtn.classList.add("playing");
+            playBtn.innerHTML = '<span class="pause-icon">||</span>';
+            cleanupAnimation = updateWhatsAppWaveformDuringPlayback(audio, { progressOverlay, progressIndicator, bars });
+          } else {
+            audio.pause();
+            playBtn.classList.remove("playing");
+            playBtn.innerHTML = '<i class="fa-solid fa-play play-icon"></i>';
+            if (cleanupAnimation) cleanupAnimation();
+          }
+        };
+
+        audio.onended = () => {
+          playBtn.classList.remove("playing");
+          playBtn.innerHTML = '<i class="fa-solid fa-play play-icon"></i>';
+          if (cleanupAnimation) cleanupAnimation();
+          progressOverlay.style.width = '0%';
+          progressIndicator.style.display = 'none';
+          Array.from(bars).forEach(bar => bar.classList.remove('active'));
+        };
+
+        const voiceInner = document.createElement("div");
+        voiceInner.className = "voice-container";
+        voiceInner.appendChild(playBtn);
+        voiceInner.appendChild(waveContainer);
+        voiceInner.appendChild(durationDiv);
+
+        voiceDiv.appendChild(voiceInner);
+        fileContainer.appendChild(voiceDiv);
+
+      } else {
+        const filePreview = document.createElement("div");
+        filePreview.className = "file-preview";
+        
+        let mediaTag;
+        let iconOverlay = null;
+
+        if (file.type.startsWith('image/')) {
+          mediaTag = document.createElement("img");
+          mediaTag.src = file.url;
+        } else if (file.type.startsWith('video/')) {
+          mediaTag = document.createElement("video");
+          mediaTag.preload = "metadata"; 
+          mediaTag.src = file.url + "#t=0.1"; 
+
+          iconOverlay = document.createElement("div");
+          iconOverlay.className = "video-chat-play";
+          iconOverlay.innerHTML = '<i class="fas fa-play"></i>';
+        }
+
+        if (mediaTag) {
+          mediaTag.classList.add("previewable");
+          mediaTag.dataset.url = file.url;
+          mediaTag.dataset.type = file.type.startsWith('image/') ? 'image' : 'video';
+          mediaTag.dataset.sender = data.user;
+          mediaTag.dataset.msgId = msgId;
+          mediaTag.dataset.filePaths = JSON.stringify(data.files.map(f => f.path));
+          
+          const openPreview = () => showPreview(file.url, mediaTag.dataset.type, data.user, msgId, data.files.map(f => f.path));
+          
+          mediaTag.onclick = openPreview;
+          if (iconOverlay) iconOverlay.onclick = openPreview; 
+
+          filePreview.appendChild(mediaTag);
+          
+          if (iconOverlay) {
+             filePreview.appendChild(iconOverlay);
+          }
+          
+          const fileInfo = document.createElement("div");
+          fileInfo.className = "file-info";
+          fileInfo.innerHTML = `<div class="file-name">${file.name}</div><div class="file-size">${formatFileSize(file.size)}</div>`;
+          filePreview.appendChild(fileInfo);
+          fileContainer.appendChild(filePreview);
+        } else {
+          const docInfo = document.createElement("div");
+          docInfo.className = "file-info";
+          docInfo.innerHTML = `<div>📄 ${file.name}</div><a href="${file.url}" class="file-download" target="_blank">Unduh (${formatFileSize(file.size)})</a>`;
+          fileContainer.appendChild(docInfo);
+        }
+      }
+    });
+    msgDiv.appendChild(fileContainer);
+  }
+
+  if (data.teks) {
+    const textEl = document.createElement("div");
+    textEl.className = "msg";
+    textEl.innerHTML = linkify(sanitize(data.teks));
+    msgDiv.appendChild(textEl);
+  }
+
+  const statusContainer = document.createElement("div");
+  statusContainer.className = "status-container";
+  
+  if (data.edited) {
+     const editedText = document.createElement("span");
+     editedText.className = "edited"; 
+     editedText.textContent = "(diedit)";
+     statusContainer.appendChild(editedText);
+  }
+
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "timestamp";
+  timeSpan.textContent = formatTime(data.waktu);
+  statusContainer.appendChild(timeSpan);
+
+  if (isMe) {
+    const readStatus = document.createElement("span");
+    readStatus.className = "status-read";
+    const isRead = data.readBy && data.readBy.length > 1; 
+    readStatus.innerHTML = isRead ? '<i class="fa-solid fa-check-double"></i>' : '<i class="fa-solid fa-check"></i>';
+    readStatus.classList.add(isRead ? 'centang-biru' : 'centang-abu');
+    statusContainer.appendChild(readStatus);
+  }
+  msgDiv.appendChild(statusContainer);
+
+  if (!isMe && data.readBy && !data.readBy.includes(username)) {
+    updateDoc(doc(db, "pesan", d.id), {
+      readBy: [...data.readBy, username]
+    }).catch(err => console.log("Gagal update read status", err));
+  }
+
+  /* --- MENU BUBBLE DENGAN TOMBOL SALIN (JIKA ADA LINK) --- */
+  const menu = document.createElement("div");
+  menu.className = "bubble-menu " + (isMe ? "outside" : "inside");
+  
+  const hasLink = data.teks && /https?:\/\/[^\s]+/i.test(data.teks);
+  
+  let menuHTML = `<button class="btn-reply" title="Balas"><i class="fa-solid fa-reply"></i></button>`;
+  if (hasLink) {
+    menuHTML += `<button class="btn-copy" title="Salin Tautan"><i class="fa-solid fa-copy"></i></button>`;
+  }
+  if (isMe) {
+    menuHTML += `<button class="btn-edit" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                 <button class="btn-delete" title="Hapus"><i class="fa-solid fa-trash"></i></button>`;
+  }
+  menu.innerHTML = menuHTML;
+  
+  const btnReply = menu.querySelector('.btn-reply');
+  if(btnReply) {
+    btnReply.onclick = () => {
+      const replyPreviewText = data.files && data.files.length > 0 
+          ? (data.files[0].type.startsWith('image') ? '📷 Foto' : (data.files[0].type.startsWith('video') ? '🎥 Video' : '📄 File')) 
+          : data.teks || '[File]';
+      
+      replyData = { user: data.user, text: replyPreviewText, id: d.id };
+      replyText.textContent = `${data.user}: ${replyPreviewText}`;
+      replyBar.style.display = "flex";
+      closeMenus();
+      input.focus();
+    };
+  }
+
+  const btnCopy = menu.querySelector('.btn-copy');
+  if (hasLink && btnCopy) {
+    btnCopy.onclick = () => {
+      const links = data.teks.match(/https?:\/\/[^\s]+/ig);
+      const linkToCopy = links ? links[0] : data.teks;
+      navigator.clipboard.writeText(linkToCopy).then(() => {
+        btnCopy.innerHTML = '<i class="fa-solid fa-check" style="color: #25D366;"></i>';
+        setTimeout(() => {
+          btnCopy.innerHTML = '<i class="fa-solid fa-copy"></i>';
+          closeMenus();
+        }, 1000);
+      }).catch(() => {
+        alert("Gagal menyalin tautan");
+        closeMenus();
+      });
+    };
+  }
+
+  if(isMe){
+    const btnEdit = menu.querySelector('.btn-edit');
+    if(btnEdit) {
+      btnEdit.onclick = async () => {
+        closeMenus();
+        const msgElement = msgDiv.querySelector(".msg");
+        if (!msgElement) return; 
+        
+        const originalText = msgElement.textContent;
+        msgElement.textContent = originalText; 
+        msgElement.contentEditable = true;
+        msgElement.focus();
+        msgElement.classList.add("editing-active");
+
+        const saveEdit = async () => {
+          if (msgElement.contentEditable !== "true") return;
+          const newText = msgElement.textContent.trim();
+          msgElement.contentEditable = false;
+          msgElement.classList.remove("editing-active");
+          
+          if (newText !== "" && newText !== originalText) {
+            try {
+              await updateDoc(doc(db, "pesan", d.id), {
+                teks: newText,
+                edited: true
+              });
+            } catch (error) {
+              console.error("Gagal edit:", error);
+              msgElement.innerHTML = linkify(sanitize(originalText));
+              alert("Gagal mengedit pesan");
+            }
+          } else {
+            msgElement.innerHTML = linkify(sanitize(originalText));
+          }
+        };
+
+        msgElement.onblur = saveEdit;
+        msgElement.onkeydown = (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveEdit();
+          }
+        };
+      };
+    }
+
+    const btnDelete = menu.querySelector('.btn-delete');
+    if(btnDelete) {
+      btnDelete.onclick = async () => {
+        closeMenus();
+        if (confirm("Hapus pesan ini untuk semua orang?")) {
+          try {
+            if (data.files && data.files.length > 0) {
+              const paths = data.files.map(f => f.path);
+              await supabase.storage.from('chat-storage').remove(paths);
+            }
+            await deleteDoc(doc(db, "pesan", d.id));
+          } catch (error) {
+            console.error("Gagal hapus:", error);
+            alert("Gagal menghapus pesan");
+          }
+        }
+      };
+    }
+  }
+
+  msgDiv.oncontextmenu = (e) => {
+    e.preventDefault();
+    closeMenus();
+    menu.style.display = "flex";
+    if (isMe) msgDiv.classList.add("shift-left");
+  };
+
+  msgDiv.onclick = (e) => {
+    if(e.target.closest('.voice-play-btn') || e.target.closest('.previewable') || e.target.closest('.video-chat-play')) return;
+
+    if (menu.style.display === "flex") {
+      closeMenus();
+    } else {
+      closeMenus();
+      menu.style.display = "flex";
+      if (isMe) msgDiv.classList.add("shift-left");
+    }
+  };
+
+  msgDiv.appendChild(menu);
+  return msgDiv;
+}
+
+async function scrollToMessage(id) {
+  let target = document.getElementById("msg-" + id);
+  if (!target && !reachedEnd) {
+    while (!target && !reachedEnd) { await loadMoreMessages(); target = document.getElementById("msg-" + id); }
+  }
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("highlight"); setTimeout(() => target.classList.remove("highlight"), 1200);
+  } else { alert("Pesan asli terlalu lama atau sudah dihapus."); }
+}
+
+window.showPreview = function(url, type, sender, messageId, filePaths) {
+  const modal = document.getElementById("preview-modal");
+  
+  const isGallery = document.getElementById("gallery-modal").style.display === "flex" || 
+                    document.getElementById("gallery-modal").style.display === "block";
+  const containerId = isGallery ? "gallery-grid" : "chat-box";
+  
+  const elements = Array.from(document.getElementById(containerId).querySelectorAll(".previewable, .file-preview img, .file-preview video, .gallery-item img, .gallery-item video"));
+  
+  previewFiles = elements.map(el => ({
+    url: el.dataset.url || el.src,
+    type: el.dataset.type || (el.tagName.toLowerCase() === 'img' ? 'image' : 'video'),
+    sender: el.dataset.sender || sender,
+    messageId: el.dataset.msgId || messageId,
+    filePaths: el.dataset.filePaths ? JSON.parse(el.dataset.filePaths) : (Array.isArray(filePaths) ? filePaths : [])
+  }));
+
+  currentPreviewIndex = previewFiles.findIndex(f => f.url === url);
+  if (currentPreviewIndex === -1) {
+    previewFiles = [{ url, type, sender, messageId, filePaths }];
+    currentPreviewIndex = 0;
+  }
+
+  renderCurrentPreview();
+  modal.style.display = "flex";
+};
+
+function renderCurrentPreview() {
+  const file = previewFiles[currentPreviewIndex];
+  if (!file) return;
+
+  const content = document.getElementById("preview-content");
+  const deleteBtn = document.getElementById("delete-preview");
+  const prevBtn = document.getElementById("prev-preview");
+  const nextBtn = document.getElementById("next-preview");
+
+  content.innerHTML = file.type === 'image' 
+    ? `<img src="${file.url}">` 
+    : `<video src="${file.url}" controls autoplay></video>`;
+
+  if (file.sender === username && file.messageId) {
+    deleteBtn.style.display = "flex";
+    deleteBtn.onclick = async (e) => {
+      e.stopPropagation();
+      if (confirm("Hapus pesan yang berisi file ini?")) {
+        try {
+          if (file.filePaths && file.filePaths.length > 0) {
+            await supabase.storage.from('chat-storage').remove(file.filePaths);
+          }
+          await deleteDoc(doc(db, "pesan", file.messageId));
+          closePreview();
+        } catch (err) { console.error(err); }
+      }
+    };
+  } else {
+    deleteBtn.style.display = "none";
+  }
+
+  prevBtn.classList.toggle("hidden", currentPreviewIndex <= 0);
+  nextBtn.classList.toggle("hidden", currentPreviewIndex >= previewFiles.length - 1);
+}
+
+window.navigatePreview = function(direction) {
+  const newIndex = currentPreviewIndex + direction;
+  if (newIndex >= 0 && newIndex < previewFiles.length) {
+    currentPreviewIndex = newIndex;
+    renderCurrentPreview();
+  }
+};
+
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById("preview-modal").style.display === "flex") {
+    if (e.key === "ArrowLeft") navigatePreview(-1);
+    if (e.key === "ArrowRight") navigatePreview(1);
+    if (e.key === "Escape") closePreview();
+  }
+});
+
+window.closePreview = function() {
+  const modal = document.getElementById("preview-modal");
+  const previewContent = document.getElementById("preview-content");
+
+  const video = previewContent.querySelector("video");
+  if (video) {
+    video.pause();      
+    video.src = "";     
+    video.load();
+  }
+
+  previewContent.innerHTML = ""; 
+  modal.style.display = "none";  
+};
+
+function closeMenus(){
+  document.querySelectorAll(".bubble-menu").forEach(m => { m.style.display = "none"; m.parentElement.classList.remove("shift-left"); });
+}
+document.addEventListener("click", closeMenus);
+
+// Event Listener Input untuk Typing Status
+input.addEventListener("input", function() { 
+  autoResizeTextarea(this); 
+  updateSend(); 
+  
+  setTypingStatus(true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => setTypingStatus(false), 3000);
+});
+
+
+/* =========================================================
+   SERVERLESS WHATSAPP CONFIG
+   Backend URL akan diberikan setelah Netlify Function dibuat.
+   Jangan masukkan WhatsApp access token di file ini.
+   ========================================================= */
+const WHATSAPP_FUNCTION_URL =
+  "https://GANTI-DENGAN-NAMA-SITE-KAMU.netlify.app/.netlify/functions/send-whatsapp";
+
+async function sendTextToWhatsApp(message) {
+  if (!message || !message.trim()) return null;
+
+  const idToken = await user.getIdToken();
+
+  const response = await fetch(WHATSAPP_FUNCTION_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${idToken}`
+    },
+    body: JSON.stringify({
+      message: message.trim()
+    })
+  });
+
+  let result = {};
+  try {
+    result = await response.json();
+  } catch (_) {}
+
+  if (!response.ok || !result.success) {
+    throw new Error(
+      result.error || "Gagal mengirim pesan ke WhatsApp."
+    );
+  }
+
+  return result;
+}
+
+window.kirim = async () => {
+  if (isSending) return;
+  const text = input.value.trim();
+  const hasFiles = filesToUpload.length > 0;
+  if (!text && !hasFiles) return;
+
+  isSending = true;
+  updateSend(); 
+  setTypingStatus(false); // Hilangkan status saat mulai mengirim
+
+  const originalBtnContent = sendBtn.innerHTML;
+  sendBtn.innerHTML = '<span style="font-size:14px">⌛</span>'; 
+  sendBtn.disabled = true;
+  input.disabled = true; 
+
+  const compressCheckboxes = document.querySelectorAll('.compress-check');
+  const messageText = text;
+  const currentReply = replyData;
+  const currentFiles = [...filesToUpload];
+  let uploadedFiles = [];
+
+  try {
+    if (hasFiles) {
+      document.querySelectorAll('.preview-remove').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.compress-check').forEach(el => el.disabled = true);
+
+      for (let i = 0; i < currentFiles.length; i++) {
+        let fileToProcess = currentFiles[i];
+        
+        const progressContainer = document.getElementById(`progress-container-${i}`);
+        const progressBar = document.getElementById(`progress-bar-${i}`);
+        
+        if (progressContainer && progressBar) {
+          progressContainer.style.display = 'block'; 
+          progressBar.style.width = '10%'; 
+          progressBar.classList.add('processing');
+        }
+
+        let progress = 10;
+        const progressInterval = setInterval(() => {
+          if (progress < 90) {
+            progress += Math.random() * 10;
+            if (progressBar) progressBar.style.width = `${progress}%`;
+          }
+        }, 200);
+
+        if (fileToProcess.type.startsWith('image/')) {
+          const checkEl = Array.from(compressCheckboxes).find(c => parseInt(c.dataset.index) === i);
+          if (!checkEl || checkEl.checked) {
+            fileToProcess = await compressImage(fileToProcess);
+          }
+        }
+
+        try {
+          const fileData = await uploadToSupabase(fileToProcess);
+          uploadedFiles.push(fileData);
+          
+          clearInterval(progressInterval);
+          if (progressBar) {
+            progressBar.style.width = '100%';
+            progressBar.classList.remove('processing');
+            progressBar.style.backgroundColor = '#25D366'; 
+          }
+        } catch (error) {
+          console.error("Gagal upload file:", fileToProcess.name, error);
+          clearInterval(progressInterval);
+          if (progressBar) {
+            progressBar.style.width = '100%';
+            progressBar.style.backgroundColor = '#ff4444'; 
+          }
+        }
+      }
+    }
+
+    const messageData = {
+      user: username,
+      waktu: serverTimestamp(),
+      edited: false,
+      readBy: [username]
+    };
+
+    if (messageText) messageData.teks = sanitize(messageText);
+    if (currentReply) messageData.reply = currentReply;
+    if (uploadedFiles.length > 0) messageData.files = uploadedFiles; 
+
+    await addDoc(collection(db, "pesan"), messageData);
+    
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 100);
+
+    input.value = "";
+    replyData = null;
+    replyBar.style.display = "none";
+    filesToUpload = []; 
+    uploadPreview.style.display = "none";
+    uploadPreview.innerHTML = "";
+    input.style.height = "auto";
+
+  } catch (error) {
+    console.error("Send error:", error);
+    alert("Gagal mengirim pesan. Silakan coba lagi.");
+    
+    document.querySelectorAll('.preview-remove').forEach(el => el.style.display = 'block');
+    document.querySelectorAll('.compress-check').forEach(el => el.disabled = false);
+    
+  } finally {
+    isSending = false;
+    input.disabled = false;
+    sendBtn.innerHTML = originalBtnContent;
+    sendBtn.disabled = false;
+    updateSend();
+    setTimeout(() => { input.focus(); }, 50);
+  }
+};
+
+input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); kirim(); } });
+
+window.cancelReply = () => { replyData = null; replyBar.style.display = "none"; input.focus(); };
+
+window.logout = async () => {
+  if (confirm("Apakah Anda yakin ingin logout?")) {
+    try {
+      logoutBtn.disabled = true; logoutBtn.innerHTML = "⌛";
+      await updateOnlineStatus('offline');
+      await saveLoginToFirestore('logout'); setTimeout(async () => { await signOut(auth); }, 1000);
+    } catch (error) { alert("Gagal logout."); logoutBtn.disabled = false; logoutBtn.innerHTML = "⎋"; }
+  }
+};
+
+async function loadMoreMessages() {
+  if (isLoadingMore || reachedEnd || !lastVisible) return;
+  const spinner = document.getElementById("load-more-spinner");
+  isLoadingMore = true; spinner.style.display = "flex";
+  const oldScrollHeight = chatBox.scrollHeight;
+  try {
+    const q = query(collection(db, "pesan"), orderBy("waktu", "desc"), startAfter(lastVisible), limit(PAGE_SIZE));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) { reachedEnd = true; spinner.style.display = "none"; return; }
+    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+    const fragment = document.createDocumentFragment();
+    const docs = [...snapshot.docs].reverse(); 
+    docs.forEach(d => { const msgEl = renderMessage(d); fragment.appendChild(msgEl); });
+    chatBox.insertBefore(fragment, spinner.nextSibling);
+    chatBox.scrollTop = chatBox.scrollHeight - oldScrollHeight;
+  } catch (error) { console.error("Gagal memuat:", error); } finally { isLoadingMore = false; spinner.style.display = "none"; }
+}
+
+/* --- LOGIKA GALERI MEDIA DENGAN TAB --- */
+let currentGalleryTab = 'all';
+
+window.switchGalleryTab = function(tab) {
+  currentGalleryTab = tab;
+  document.querySelectorAll('.g-tab').forEach(el => {
+    el.classList.remove('active');
+    if(el.getAttribute('onclick').includes(`'${tab}'`)) el.classList.add('active');
+  });
+  renderGalleryItems();
+};
+
+window.openGallery = async function() {
+  document.getElementById("gallery-modal").style.display = "flex";
+  currentGalleryTab = 'all'; 
+  switchGalleryTab('all');
+};
+
+window.closeGallery = function() {
+  document.getElementById("gallery-modal").style.display = "none";
+};
+
+async function renderGalleryItems() {
+  const galleryGrid = document.getElementById("gallery-grid");
+  
+  if (!galleryGrid.innerHTML) {
+    galleryGrid.innerHTML = "<div style='grid-column: 1/4; padding: 20px; text-align: center; color: #aaa;'>Memuat...</div>";
+  }
+
+  if (galleryListener) galleryListener();
+
+  try {
+    const q = query(collection(db, "pesan"), orderBy("waktu", "desc"));
+
+    galleryListener = onSnapshot(q, (querySnapshot) => {
+      galleryGrid.innerHTML = "";
+      let mediaCount = 0;
+
+      querySnapshot.forEach((docSnapshot) => {
+        const data = docSnapshot.data();
+        const msgId = docSnapshot.id;
+        const sender = data.user;
+        const filePaths = data.files ? data.files.map(f => f.path) : [];
+        const filePathsJson = JSON.stringify(filePaths).replace(/"/g, '&quot;');
+
+        if (data.files && data.files.length > 0) {
+          data.files.forEach(file => {
+            let isImg = file.type.startsWith('image/');
+            let isVid = file.type.startsWith('video/');
+            let isDoc = !isImg && !isVid;
+
+            if (
+              (currentGalleryTab === 'all' && (isImg || isVid || isDoc)) ||
+              (currentGalleryTab === 'image' && isImg) ||
+              (currentGalleryTab === 'video' && isVid) ||
+              (currentGalleryTab === 'doc' && isDoc)
+            ) {
+              mediaCount++;
+              const item = document.createElement("div");
+
+              if (isImg) {
+                item.className = "gallery-item";
+                item.innerHTML = `<img src="${file.url}" onclick="showPreview('${file.url}', 'image', '${sender}', '${msgId}', ${filePathsJson})" loading="lazy">`;
+              } else if (isVid) {
+                item.className = "gallery-item";
+                item.innerHTML = `
+                  <video src="${file.url}" preload="metadata"></video>
+                  <div class="video-icon">▶</div>
+                  <div class="play-overlay" onclick="showPreview('${file.url}', 'video', '${sender}', '${msgId}', ${filePathsJson})"></div>
+                `;
+              } else {
+                item.className = "gallery-doc-item";
+                item.onclick = () => window.open(file.url, '_blank');
+                item.innerHTML = `<span>📄</span><small>${file.name}</small>`;
+              }
+              galleryGrid.appendChild(item);
+            }
+          });
+        }
+      });
+
+      if (mediaCount === 0) {
+        galleryGrid.innerHTML = `<div style='grid-column: 1/4; padding: 40px; text-align: center; color: #aaa;'>Tidak ada media di kategori ini.</div>`;
+      }
+    });
+
+  } catch (error) {
+    console.error("Gagal memuat galeri:", error);
+    galleryGrid.innerHTML = "<div style='grid-column: 1/4; padding: 20px; text-align: center; color: red;'>Gagal memuat galeri.</div>";
+  }
+}
+
+updateSend();
+setTimeout(() => {
+  if (input) {
+    input.focus();
+    input.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
+  }
+}, 300);
+</script>
+
+</body>
+</html>

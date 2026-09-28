@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>WebChat</title>
+<link rel="icon" type="image/png" href="chat.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      // !!! UBAH BAGIAN INI !!!
+      // Ganti dengan Public Key dari akun EmailJS Anda
+      emailjs.init("zbTikJ88UGjQ33UHu"); 
+   })();
+</script>
+
+<style>
+:root{
+  --wa-green:#00a884;
+  --bg:#f0f2f5;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  height:100vh;
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+.card{
+  background:#fff;
+  width:100%;
+  max-width:380px;
+  padding:32px 26px;
+  border-radius:12px;
+  box-shadow:0 4px 20px rgba(0,0,0,.08);
+  text-align:center
+}
+
+.logo{
+  font-size:26px;
+  font-weight:700;
+  color:var(--wa-green);
+  margin-bottom:6px
+}
+
+.subtitle{
+  font-size:14px;
+  color:#666;
+  margin-bottom:24px
+}
+
+.input{
+  width:100%;
+  padding:14px 16px;
+  margin-bottom:14px;
+  border-radius:999px;
+  border:1px solid #ddd;
+  font-size:14px;
+  outline:none
+}
+.input:focus{border-color:var(--wa-green)}
+
+.btn{
+  width:100%;
+  height:46px;
+  border-radius:999px;
+  border:none;
+  background:var(--wa-green);
+  color:#fff;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px
+}
+.btn:disabled{opacity:.7;cursor:not-allowed}
+
+.error{
+  min-height:18px;
+  color:#e53935;
+  font-size:13px;
+  margin-bottom:10px
+}
+
+.success{
+  min-height:18px;
+  color:#00a884;
+  font-size:13px;
+  margin-bottom:10px
+}
+
+.switch{
+  margin-top:22px;
+  font-size:14px;
+  color:var(--wa-green);
+  cursor:pointer
+}
+.switch:hover{text-decoration:underline}
+
+.spinner{
+  width:18px;
+  height:18px;
+  border:3px solid rgba(255,255,255,.4);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin .7s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.password-strength{
+  font-size:12px;
+  margin:-8px 0 10px 12px;
+  text-align:left;
+  height:14px
+}
+.weak{color:#e53935}
+.medium{color:#ff9800}
+.strong{color:#4caf50}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="logo">WebChat</div>
+  <div class="subtitle" id="title">Masuk ke akun Anda</div>
+
+  <div id="message"></div>
+
+  <input class="input" id="loginId" placeholder="Username atau Email">
+  <input class="input" id="username" placeholder="Username" style="display:none" autocomplete="off" autocapitalize="none">
+  <input class="input" id="fullName" placeholder="Nama Lengkap" style="display:none">
+  <input class="input" id="email" placeholder="Email" style="display:none">
+  <input class="input" id="password" type="password" placeholder="Kata sandi">
+  <div class="password-strength" id="passwordStrength"></div>
+
+  <div id="otpContainer" style="display:none; margin-bottom:14px;">
+    <p style="font-size: 13px; color: #666; margin-top:0; margin-bottom:8px;">Cek email Anda untuk kode OTP</p>
+    <input class="input" id="otpInput" placeholder="Masukkan Kode" maxlength="6" style="text-align: center; letter-spacing: 4px; font-weight:bold;">
+  </div>
+
+  <button class="btn" id="submitBtn">
+    <span id="btnText">Masuk</span>
+  </button>
+
+  <div class="switch" id="switch">Belum punya akun? Daftar</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "AIzaSyDyNGIqto0Sk0UT1IzC-xgOV9sI71GrIu8",
+  authDomain: "webchat-coba.firebaseapp.com",
+  projectId: "webchat-coba",
+  storageBucket: "webchat-coba.firebasestorage.app",
+  messagingSenderId: "808219710650",
+  appId: "1:808219710650:web:61320aa86fda4ce804de83",
+  measurementId: "G-VEKM8LJRY1"
+};
+
+// Inisialisasi Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ELEMENT */
+const loginId=document.getElementById("loginId");
+const username=document.getElementById("username");
+const fullName=document.getElementById("fullName");
+const email=document.getElementById("email");
+const password=document.getElementById("password");
+const submit=document.getElementById("submitBtn");
+const btnText=document.getElementById("btnText");
+const message=document.getElementById("message");
+const switchBtn=document.getElementById("switch");
+const title=document.getElementById("title");
+const passwordStrength=document.getElementById("passwordStrength");
+
+const otpContainer=document.getElementById("otpContainer");
+const otpInput=document.getElementById("otpInput");
+
+let signup=false;
+let loading=false;
+let otpSent=false;
+let currentOTP="";
+
+/* UTIL FUNCTIONS */
+function sanitize(text){
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function checkPasswordStrength(pass){
+  if(!pass) return {level: 0, text: "", class: ""};
+  let strength = 0;
+  if(pass.length >= 8) strength++;
+  if(/[A-Z]/.test(pass)) strength++;
+  if(/[0-9]/.test(pass)) strength++;
+  if(/[^A-Za-z0-9]/.test(pass)) strength++;
+  
+  return {
+    level: strength,
+    text: strength < 2 ? "Lemah" : strength < 4 ? "Sedang" : "Kuat",
+    class: strength < 2 ? "weak" : strength < 4 ? "medium" : "strong"
+  };
+}
+
+const isEmail=s=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+async function findEmailByUsername(u){
+  try{
+    const q=query(collection(db,"usernames"),where("username","==",u));
+    const s=await getDocs(q);
+    return s.empty?null:s.docs[0].data().email;
+  }catch(error){
+    console.error("Error finding email:", error);
+    return null;
+  }
+}
+
+async function checkUsernameExists(u){
+  try{
+    const q=query(collection(db,"usernames"),where("username","==",u));
+    const s=await getDocs(q);
+    return !s.empty;
+  }catch(error){
+    console.error("Error checking username:", error);
+    return false;
+  }
+}
+
+password.addEventListener("input",function(){
+  if(!signup) return;
+  const pass = this.value;
+  const strength = checkPasswordStrength(pass);
+  if(pass.length === 0){
+    passwordStrength.textContent = "";
+  } else {
+    passwordStrength.textContent = `Kekuatan kata sandi: ${strength.text}`;
+    passwordStrength.className = `password-strength ${strength.class}`;
+  }
+});
+
+onAuthStateChanged(auth,async user=>{
+  if(user && !signup) {
+    location.href="index.html";
+  }
+});
+
+function setLoading(v){
+  loading=v;
+  submit.disabled=v;
+  if(v){
+    btnText.textContent="Memproses";
+    submit.insertAdjacentHTML("afterbegin","<div class='spinner'></div>");
+  }else{
+    submit.querySelector(".spinner")?.remove();
+    if(signup && otpSent) {
+      btnText.textContent="Verifikasi & Daftar";
+    } else {
+      btnText.textContent=signup?"Daftar":"Masuk"; 
+    }
+  }
+}
+
+function showMessage(text, isError = true){
+  message.textContent = text;
+  message.className = isError ? "error" : "success";
+}
+
+switchBtn.onclick=()=>{
+  if(loading) return;
+  signup=!signup;
+  
+  otpSent = false;
+  currentOTP = "";
+  otpContainer.style.display = "none";
+  otpInput.value = "";
+  
+  showMessage("");
+  loginId.value=username.value=fullName.value=email.value=password.value="";
+  passwordStrength.textContent = "";
+  password.style.display = "block";
+  
+  if(signup){
+    title.textContent="Buat akun baru";
+    loginId.style.display="none";
+    username.style.display="block";
+    fullName.style.display="block";
+    email.style.display="block";
+    btnText.textContent="Daftar";
+    switchBtn.textContent="Sudah punya akun? Masuk";
+    setTimeout(() => username.focus(), 100);
+  }else{
+    title.textContent="Masuk ke akun Anda";
+    loginId.style.display="block";
+    username.style.display="none";
+    fullName.style.display="none";
+    email.style.display="none";
+    btnText.textContent="Masuk";
+    switchBtn.textContent="Belum punya akun? Daftar";
+    setTimeout(() => loginId.focus(), 100);
+  }
+};
+
+async function handleAuth(){
+  if(loading) return;
+  setLoading(true);
+  showMessage("");
+
+  try{
+    if(signup){
+      const usernameTrimmed = username.value.trim();
+      const fullNameTrimmed = fullName.value.trim();
+      const emailTrimmed = email.value.trim();
+      const passwordTrimmed = password.value;
+
+      if(!otpSent) {
+        if(!usernameTrimmed || !fullNameTrimmed || !emailTrimmed || !passwordTrimmed){ throw "Lengkapi semua data"; }
+        if(usernameTrimmed.length < 3){ throw "Username minimal 3 karakter"; }
+        if(!isEmail(emailTrimmed)){ throw "Format email tidak valid"; }
+        if(passwordTrimmed.length < 6){ throw "Password minimal 6 karakter"; }
+
+        const usernameExists = await checkUsernameExists(usernameTrimmed);
+        if(usernameExists){ throw "Username sudah digunakan"; }
+
+        currentOTP = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        try {
+          // Menggunakan Nama Lengkap untuk dikirim ke EmailJS
+          await emailjs.send("service_ij84z52", "template_9v8skgh", {
+            username: fullNameTrimmed, // Variabel 'username' di template kini berisi Nama Lengkap
+            otp_code: currentOTP,
+            to_email: emailTrimmed,
+          });
+        } catch (emailError) {
+          throw "Gagal mengirim OTP ke email.";
+        }
+
+        otpSent = true;
+        username.style.display = "none";
+        fullName.style.display = "none";
+        email.style.display = "none";
+        password.style.display = "none";
+        passwordStrength.textContent = "";
+        
+        otpContainer.style.display = "block";
+        title.textContent = "Verifikasi Email";
+        btnText.textContent = "Verifikasi & Daftar";
+        
+        showMessage("Kode OTP telah dikirim ke " + emailTrimmed, false);
+        setLoading(false);
+        setTimeout(() => otpInput.focus(), 100);
+        return;
+      }
+      
+      else {
+        const userOtp = otpInput.value.trim();
+        if(userOtp !== currentOTP) throw "Kode OTP salah";
+
+        const userCredential = await createUserWithEmailAndPassword(auth, email.value.trim(), password.value);
+        const user = userCredential.user;
+
+        await setDoc(doc(db,"usernames",user.uid),{
+          username: username.value.trim(),
+          fullName: fullName.value.trim(),
+          email: email.value.trim(),
+          createdAt: new Date().toISOString()
+        });
+        
+        await signOut(auth);
+
+        signup = false;
+        otpSent = false;
+        currentOTP = "";
+        
+        loginId.value = username.value = fullName.value = email.value = password.value = otpInput.value = "";
+        
+        title.textContent = "Masuk ke akun Anda";
+        loginId.style.display = "block";
+        username.style.display = fullName.style.display = email.style.display = "none";
+        password.style.display = "block";
+        otpContainer.style.display = "none";
+        
+        btnText.textContent = "Masuk";
+        switchBtn.textContent = "Belum punya akun? Daftar";
+        
+        showMessage("Akun berhasil dibuat! Silakan login.", false);
+        setLoading(false);
+        setTimeout(() => loginId.focus(), 100);
+      }
+    }else{
+      let id = loginId.value.trim();
+      if(!id || !password.value) throw "Lengkapi data";
+
+      let mail = isEmail(id) ? id : await findEmailByUsername(id);
+      if(!mail) throw "Akun tidak ditemukan";
+
+      await signInWithEmailAndPassword(auth, mail, password.value);
+    }
+  }catch(error){
+    showMessage(typeof error === "string" ? error : error.message);
+    setLoading(false);
+  }
+}
+
+submit.onclick=handleAuth;
+document.addEventListener("keydown",e=>{ if(e.key==="Enter") handleAuth(); });
+setTimeout(() => { if(loginId) loginId.focus(); }, 100);
+</script>
+
+</body>
+</html>
